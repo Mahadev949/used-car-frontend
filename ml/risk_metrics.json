@@ -1,0 +1,42 @@
+{
+  "accuracy": 0.9999981615822159,
+  "report": {
+    "High": {
+      "precision": 0.9999986881667392,
+      "recall": 0.9999986881667392,
+      "f1-score": 0.9999986881667392,
+      "support": 762292.0
+    },
+    "Low": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 111015.0
+    },
+    "Medium": {
+      "precision": 0.9999953398420206,
+      "recall": 0.9999953398420206,
+      "f1-score": 0.9999953398420206,
+      "support": 214585.0
+    },
+    "accuracy": 0.9999981615822159,
+    "macro avg": {
+      "precision": 0.9999980093362533,
+      "recall": 0.9999980093362533,
+      "f1-score": 0.9999980093362533,
+      "support": 1087892.0
+    },
+    "weighted avg": {
+      "precision": 0.9999981615822159,
+      "recall": 0.9999981615822159,
+      "f1-score": 0.9999981615822159,
+      "support": 1087892.0
+    }
+  },
+  "formula": "RiskScore = (Age * 5) + (kms_driven / 10000 * 3) + (OwnerFactor * 10)",
+  "thresholds": {
+    "Low": "< 30",
+    "Medium": "30 - 60",
+    "High": "> 60"
+  }
+}
