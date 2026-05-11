@@ -12,7 +12,7 @@ const RegisterPage = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { register, isAuthenticated, user } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const portalOptions = [
