@@ -137,7 +137,7 @@ if __name__ == '__main__':
     df = generate_car_data(75000)
     
     # Save to CSV
-    output_path = 'dataset/used_cars_dataset.csv'
+    output_path = 'dataset/used_output_part1.csv'
     df.to_csv(output_path, index=False)
     
     print(f"Dataset generated successfully!")

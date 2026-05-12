@@ -43,30 +43,30 @@ router.post('/', async (req, res) => {
 
     // Call Python prediction API
     let result;
-    console.log(`[Prediction] Calling ML API: ${ML_API_URL}/predict`);
-    // console.log(`[Prediction] Payload:`, JSON.stringify(carData));
+    const targetUrl = `${ML_API_URL}/predict`;
+    console.log(`[Prediction] Forwarding request to ML API: ${targetUrl}`);
 
     try {
-      const response = await axios.post(`${ML_API_URL}/predict`, carData, {
-        timeout: 10000 // 10s timeout
+      const response = await axios.post(targetUrl, carData, {
+        timeout: 15000 // 15s timeout for cold starts
       });
       result = response.data;
-      console.log(`[Prediction] ML API Success:`, result);
+      console.log(`[Prediction] ML API Success - Price: ${result.predicted_price}`);
     } catch (apiError) {
-      console.error(`[Prediction] ML API ERROR:`);
-      console.error(`- URL: ${ML_API_URL}/predict`);
-      console.error(`- Status: ${apiError.response?.status}`);
-      console.error(`- Message: ${apiError.message}`);
-      console.error(`- Data:`, apiError.response?.data);
+      const errorDetails = {
+        message: apiError.message,
+        status: apiError.response?.status,
+        statusText: apiError.response?.statusText,
+        data: apiError.response?.data,
+        url: targetUrl
+      };
+      
+      console.error(`[Prediction] ML API ERROR:`, JSON.stringify(errorDetails, null, 2));
 
       return res.status(500).json({
         success: false,
-        error: apiError.response?.data?.error || `ML Service Error: ${apiError.message}`,
-        details: {
-          url: `${ML_API_URL}/predict`,
-          status: apiError.response?.status,
-          message: apiError.message
-        }
+        error: `ML Service Error: ${apiError.message}`,
+        details: errorDetails
       });
     }
 

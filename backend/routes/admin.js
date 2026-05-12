@@ -24,6 +24,11 @@ let trainingStatus = {
 router.use(authenticateToken);
 router.use(requireAdmin);
 
+// GET /api/admin/test
+router.get('/test', (req, res) => {
+  res.json({ success: true, message: 'Admin routes are active', user: req.user });
+});
+
 // GET /api/admin/training-status
 router.get('/training-status', (req, res) => {
   res.json({
