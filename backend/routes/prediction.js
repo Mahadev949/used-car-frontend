@@ -1,12 +1,9 @@
 import express from 'express';
-import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import axios from 'axios';
 import { query } from '../db/connection.js';
 
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const ML_API_URL = process.env.ML_API_URL || 'http://localhost:10000';
 
 // POST /api/predict
 router.post('/', async (req, res) => {
@@ -44,14 +41,23 @@ router.post('/', async (req, res) => {
       'owner_type': owner_type.toLowerCase()
     };
 
-    // Call Python prediction script
-    const pythonScript = join(__dirname, '../../ml/predict.py');
-    const result = await runPythonScript(pythonScript, JSON.stringify(carData));
-
-    if (!result.success) {
+    // Call Python prediction API
+    let result;
+    try {
+      const response = await axios.post(`${ML_API_URL}/predict`, carData);
+      result = response.data;
+    } catch (apiError) {
+      console.error('ML API Error:', apiError.response?.data || apiError.message);
       return res.status(500).json({
         success: false,
-        error: result.error || 'Prediction failed'
+        error: apiError.response?.data?.error || 'ML Prediction Service unavailable'
+      });
+    }
+
+    if (!result || !result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result?.error || 'Prediction failed'
       });
     }
 
@@ -97,35 +103,6 @@ router.post('/', async (req, res) => {
     });
   }
 });
-
-function runPythonScript(scriptPath, inputData) {
-  return new Promise((resolve, reject) => {
-    const python = spawn('python', [scriptPath, inputData]);
-    let output = '';
-    let errorOutput = '';
-
-    python.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    python.stderr.on('data', (data) => {
-      errorOutput += data.toString();
-    });
-
-    python.on('close', (code) => {
-      if (code !== 0) {
-        resolve({ success: false, error: errorOutput || 'Python script failed' });
-      } else {
-        try {
-          const result = JSON.parse(output.trim());
-          resolve(result);
-        } catch (e) {
-          resolve({ success: false, error: 'Failed to parse prediction result' });
-        }
-      }
-    });
-  });
-}
 
 export default router;
 
