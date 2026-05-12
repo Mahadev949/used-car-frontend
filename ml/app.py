@@ -8,10 +8,30 @@ CORS(app) # Enable CORS for all routes
 
 @app.route("/", methods=["GET"])
 def home():
+    # Check for model files
+    price_model_exists = os.path.exists("price_model.pkl")
+    risk_model_exists = os.path.exists("risk_model.pkl")
+    
     return jsonify({
         "status": "online",
         "message": "ML API Running",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "models": {
+            "price_model": "found" if price_model_exists else "MISSING",
+            "risk_model": "found" if risk_model_exists else "MISSING"
+        },
+        "environment": {
+            "cwd": os.getcwd(),
+            "files": os.listdir(".")[:20] # List first 20 files for debugging
+        }
+    })
+
+@app.route("/debug", methods=["GET"])
+def debug():
+    return jsonify({
+        "cwd": os.getcwd(),
+        "all_files": os.listdir("."),
+        "ml_files": os.listdir("ml") if os.path.exists("ml") else "no ml dir"
     })
 
 @app.route("/predict", methods=["POST"])

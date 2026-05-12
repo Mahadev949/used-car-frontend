@@ -3,7 +3,7 @@ import axios from 'axios';
 import { query } from '../db/connection.js';
 
 const router = express.Router();
-const ML_API_URL = process.env.ML_API_URL || 'http://localhost:10000';
+const ML_API_URL = process.env.ML_API_URL || 'https://used-car-ml.onrender.com';
 
 // POST /api/predict
 router.post('/', async (req, res) => {
