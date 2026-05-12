@@ -8,6 +8,11 @@ import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// GET /api/admin/test-no-auth (For debugging 404s)
+router.get('/test-no-auth', (req, res) => {
+  res.json({ success: true, message: 'Admin router is MOUNTED' });
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -20,14 +25,9 @@ let trainingStatus = {
   error: null
 };
 
-// All admin routes require authentication and admin role
+// All admin routes below this point require authentication and admin role
 router.use(authenticateToken);
 router.use(requireAdmin);
-
-// GET /api/admin/test
-router.get('/test', (req, res) => {
-  res.json({ success: true, message: 'Admin routes are active', user: req.user });
-});
 
 // GET /api/admin/training-status
 router.get('/training-status', (req, res) => {

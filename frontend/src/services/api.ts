@@ -1,7 +1,12 @@
 /// <reference types="vite/client" />
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://used-car-backendd.onrender.com/api';
+let API_BASE_URL = import.meta.env.VITE_API_URL || 'https://used-car-backendd.onrender.com/api';
+
+// Normalize URL: remove trailing slash if exists
+if (API_BASE_URL.endsWith('/')) {
+  API_BASE_URL = API_BASE_URL.slice(0, -1);
+}
 
 console.log('Frontend using API Base URL:', API_BASE_URL);
 
