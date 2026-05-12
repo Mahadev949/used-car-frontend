@@ -10,16 +10,16 @@ const router = express.Router();
 
 // GET /api/admin/test-no-auth (For debugging 404s)
 router.get('/test-no-auth', (req, res) => {
-  res.json({ success: true, message: 'Admin router is MOUNTED' });
+  res.json({ success: true, message: 'Admin router is MOUNTED', version: '2.0.0' });
 });
 
 // GET /api/admin/metrics-no-auth (For debugging 404s)
 router.get('/metrics-no-auth', async (req, res) => {
   try {
     const dbRes = await query('SELECT * FROM model_metrics ORDER BY created_at DESC LIMIT 1');
-    res.json({ success: true, data: dbRes.rows[0] });
+    res.json({ success: true, data: dbRes.rows[0], version: '2.0.0' });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: e.message, version: '2.0.0' });
   }
 });
 
