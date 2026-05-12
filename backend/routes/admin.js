@@ -13,6 +13,16 @@ router.get('/test-no-auth', (req, res) => {
   res.json({ success: true, message: 'Admin router is MOUNTED' });
 });
 
+// GET /api/admin/metrics-no-auth (For debugging 404s)
+router.get('/metrics-no-auth', async (req, res) => {
+  try {
+    const dbRes = await query('SELECT * FROM model_metrics ORDER BY created_at DESC LIMIT 1');
+    res.json({ success: true, data: dbRes.rows[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
