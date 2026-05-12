@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from predict import predict_price_and_risk
 import os
+import sys
+import subprocess
+import threading
 
 app = Flask(__name__)
 CORS(app) # Enable CORS for all routes
@@ -46,9 +49,6 @@ def predict():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-import subprocess
-import threading
-
 # Global state for setup status
 setup_status = {
     "active": False,
@@ -57,29 +57,47 @@ setup_status = {
     "error": None
 }
 
-@app.route("/setup", methods=["POST"])
+@app.route("/setup", methods=["GET", "POST"])
 def setup():
     if setup_status["active"]:
-        return jsonify({"success": False, "error": "Setup already in progress"}), 400
+        return jsonify({"success": False, "error": "Setup already in progress", "status": setup_status}), 400
         
     def run_setup():
         try:
             setup_status["active"] = True
             setup_status["error"] = None
+            setup_status["message"] = "Starting setup..."
+            
+            python_exe = sys.executable or "python"
             
             # 1. Generate Dataset
-            setup_status["message"] = "Generating synthetic dataset..."
-            subprocess.run(["python", "generate_dataset.py"], check=True, capture_output=True)
+            setup_status["message"] = "Step 1/3: Generating synthetic dataset..."
+            res1 = subprocess.run([python_exe, "generate_dataset.py"], capture_output=True, text=True)
+            if res1.returncode != 0:
+                raise Exception(f"Dataset generation failed: {res1.stderr}")
             
-            # 2. Train Model
-            setup_status["message"] = "Training models (this may take a few minutes)..."
-            subprocess.run(["python", "train_model.py"], check=True, capture_output=True)
+            # 2. Train Price Model
+            setup_status["message"] = "Step 2/3: Training Price Model (Random Forest)..."
+            res2 = subprocess.run([python_exe, "train_model.py"], capture_output=True, text=True)
+            if res2.returncode != 0:
+                raise Exception(f"Price model training failed: {res2.stderr}")
             
-            setup_status["message"] = "Setup completed successfully"
-            setup_status["last_completed"] = os.path.abspath("price_model.pkl")
+            # 3. Train Risk Model
+            setup_status["message"] = "Step 3/3: Training Risk Classifier..."
+            res3 = subprocess.run([python_exe, "risk_classification.py"], capture_output=True, text=True)
+            if res3.returncode != 0:
+                raise Exception(f"Risk model training failed: {res3.stderr}")
+            
+            setup_status["message"] = "Setup completed successfully. All models generated."
+            setup_status["last_completed"] = {
+                "time": os.popen("date").read().strip(),
+                "price_model": os.path.exists("price_model.pkl"),
+                "risk_model": os.path.exists("risk_model.pkl")
+            }
         except Exception as e:
             setup_status["error"] = str(e)
             setup_status["message"] = "Setup failed"
+            print(f"SETUP ERROR: {e}")
         finally:
             setup_status["active"] = False
 
@@ -88,7 +106,8 @@ def setup():
     
     return jsonify({
         "success": True, 
-        "message": "Setup started in background. Check /status for progress."
+        "message": "Setup started in background. Monitor progress at /status",
+        "method_used": request.method
     })
 
 @app.route("/status", methods=["GET"])
