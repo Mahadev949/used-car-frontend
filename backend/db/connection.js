@@ -97,6 +97,8 @@ export async function initDatabase() {
         train_r2 DECIMAL(10, 4),
         train_rmse DECIMAL(12, 2),
         train_mae DECIMAL(12, 2),
+        accuracy DECIMAL(10, 4),
+        train_accuracy DECIMAL(10, 4),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
