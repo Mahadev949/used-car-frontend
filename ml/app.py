@@ -49,76 +49,36 @@ def predict():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-# Global state for setup status
-setup_status = {
-    "active": False,
-    "message": "Idle",
-    "last_completed": None,
-    "error": None
-}
-
-@app.route("/setup", methods=["GET", "POST"])
-def setup():
-    if setup_status["active"]:
-        return jsonify({"success": False, "error": "Setup already in progress", "status": setup_status}), 400
+@app.route("/upload-models", methods=["POST"])
+def upload_models():
+    try:
+        if 'price_model' not in request.files and 'risk_model' not in request.files:
+            return jsonify({"success": False, "error": "No model files provided"}), 400
+            
+        uploaded_files = []
         
-    def run_setup():
-        try:
-            setup_status["active"] = True
-            setup_status["error"] = None
-            setup_status["message"] = "Starting setup..."
-            
-            python_exe = sys.executable or "python"
-            
-            # 1. Generate Dataset
-            setup_status["message"] = "Step 1/3: Generating synthetic dataset..."
-            res1 = subprocess.run([python_exe, "generate_dataset.py"], capture_output=True, text=True)
-            if res1.returncode != 0:
-                raise Exception(f"Dataset generation failed: {res1.stderr}")
-            
-            # 2. Train Price Model
-            setup_status["message"] = "Step 2/3: Training Price Model (Random Forest)..."
-            res2 = subprocess.run([python_exe, "train_model.py"], capture_output=True, text=True)
-            if res2.returncode != 0:
-                raise Exception(f"Price model training failed: {res2.stderr}")
-            
-            # 3. Train Risk Model
-            setup_status["message"] = "Step 3/3: Training Risk Classifier..."
-            res3 = subprocess.run([python_exe, "risk_classification.py"], capture_output=True, text=True)
-            if res3.returncode != 0:
-                raise Exception(f"Risk model training failed: {res3.stderr}")
-            
-            setup_status["message"] = "Setup completed successfully. All models generated."
-            setup_status["last_completed"] = {
-                "time": os.popen("date").read().strip(),
-                "price_model": os.path.exists("price_model.pkl"),
-                "risk_model": os.path.exists("risk_model.pkl")
+        if 'price_model' in request.files:
+            file = request.files['price_model']
+            if file.filename != '':
+                file.save("price_model.pkl")
+                uploaded_files.append("price_model.pkl")
+                
+        if 'risk_model' in request.files:
+            file = request.files['risk_model']
+            if file.filename != '':
+                file.save("risk_model.pkl")
+                uploaded_files.append("risk_model.pkl")
+                
+        return jsonify({
+            "success": True, 
+            "message": f"Successfully uploaded: {', '.join(uploaded_files)}",
+            "models": {
+                "price_model": "found" if os.path.exists("price_model.pkl") else "MISSING",
+                "risk_model": "found" if os.path.exists("risk_model.pkl") else "MISSING"
             }
-        except Exception as e:
-            setup_status["error"] = str(e)
-            setup_status["message"] = "Setup failed"
-            print(f"SETUP ERROR: {e}")
-        finally:
-            setup_status["active"] = False
-
-    thread = threading.Thread(target=run_setup)
-    thread.start()
-    
-    return jsonify({
-        "success": True, 
-        "message": "Setup started in background. Monitor progress at /status",
-        "method_used": request.method
-    })
-
-@app.route("/status", methods=["GET"])
-def status():
-    return jsonify({
-        "status": setup_status,
-        "models": {
-            "price_model": "found" if os.path.exists("price_model.pkl") else "MISSING",
-            "risk_model": "found" if os.path.exists("risk_model.pkl") else "MISSING"
-        }
-    })
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
