@@ -12,20 +12,26 @@ CORS(app) # Enable CORS for all routes
 @app.route("/", methods=["GET"])
 def home():
     # Check for model files
-    price_model_exists = os.path.exists("price_model.pkl")
-    risk_model_exists = os.path.exists("risk_model.pkl")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    price_model_path = os.path.join(base_dir, "price_model.pkl")
+    risk_model_path = os.path.join(base_dir, "risk_model.pkl")
+    
+    price_model_exists = os.path.exists(price_model_path)
+    risk_model_exists = os.path.exists(risk_model_path)
     
     return jsonify({
         "status": "online",
         "message": "ML API Running",
         "version": "1.0.0",
         "models": {
-            "price_model": "found" if price_model_exists else "MISSING",
-            "risk_model": "found" if risk_model_exists else "MISSING"
+            "price_model": "FOUND" if price_model_exists else "NOT FOUND",
+            "risk_model": "FOUND" if risk_model_exists else "NOT FOUND"
         },
         "environment": {
             "cwd": os.getcwd(),
-            "files": os.listdir(".")[:20] # List first 20 files for debugging
+            "price_model_path": price_model_path,
+            "risk_model_path": risk_model_path,
+            "files": os.listdir(".")[:20] 
         }
     })
 
@@ -55,26 +61,30 @@ def upload_models():
         if 'price_model' not in request.files and 'risk_model' not in request.files:
             return jsonify({"success": False, "error": "No model files provided"}), 400
             
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        price_model_path = os.path.join(base_dir, "price_model.pkl")
+        risk_model_path = os.path.join(base_dir, "risk_model.pkl")
+        
         uploaded_files = []
         
         if 'price_model' in request.files:
             file = request.files['price_model']
             if file.filename != '':
-                file.save("price_model.pkl")
+                file.save(price_model_path)
                 uploaded_files.append("price_model.pkl")
                 
         if 'risk_model' in request.files:
             file = request.files['risk_model']
             if file.filename != '':
-                file.save("risk_model.pkl")
+                file.save(risk_model_path)
                 uploaded_files.append("risk_model.pkl")
                 
         return jsonify({
             "success": True, 
             "message": f"Successfully uploaded: {', '.join(uploaded_files)}",
             "models": {
-                "price_model": "found" if os.path.exists("price_model.pkl") else "MISSING",
-                "risk_model": "found" if os.path.exists("risk_model.pkl") else "MISSING"
+                "price_model": "FOUND" if os.path.exists(price_model_path) else "NOT FOUND",
+                "risk_model": "FOUND" if os.path.exists(risk_model_path) else "NOT FOUND"
             }
         })
     except Exception as e:
