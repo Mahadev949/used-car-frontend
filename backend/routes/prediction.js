@@ -43,21 +43,47 @@ router.post('/', async (req, res) => {
 
     // Call Python prediction API
     let result;
+    const targetUrl = `${ML_API_URL}/predict`;
+    console.log(`[Prediction] Calling ML API: ${targetUrl}`);
+    console.log(`[Prediction] Payload:`, JSON.stringify(carData));
+
     try {
-      const response = await axios.post(`${ML_API_URL}/predict`, carData);
+      const response = await axios.post(targetUrl, carData, {
+        timeout: 25000 // Add timeout for Render cold starts
+      });
+      console.log(`[Prediction] ML API Response Status: ${response.status}`);
       result = response.data;
     } catch (apiError) {
-      console.error('ML API Error:', apiError.response?.data || apiError.message);
+      console.error('[Prediction] ML API Error:');
+      if (apiError.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error(`- Status: ${apiError.response.status}`);
+        console.error(`- Data:`, apiError.response.data);
+      } else if (apiError.request) {
+        // The request was made but no response was received
+        console.error(`- No response received. Target: ${targetUrl}`);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error(`- Message: ${apiError.message}`);
+      }
+      
       return res.status(500).json({
         success: false,
-        error: apiError.response?.data?.error || 'ML Prediction Service unavailable'
+        error: apiError.response?.data?.error || apiError.message || 'ML Prediction Service unavailable',
+        debug_info: {
+          target_url: targetUrl,
+          error_message: apiError.message
+        }
       });
     }
 
     if (!result || !result.success) {
+      console.error('[Prediction] ML Result Failed:', result);
       return res.status(500).json({
         success: false,
-        error: result?.error || 'Prediction failed'
+        error: result?.error || 'Prediction failed',
+        debug_info: result
       });
     }
 
